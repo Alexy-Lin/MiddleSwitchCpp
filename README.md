@@ -63,7 +63,7 @@
 ---
 ## 安全与杀软提醒
 - **扫描结果**：本程序已通过 [VirusTotal](https://www.virustotal.com/) 多引擎扫描，**70 家主流杀毒软件均未发现问题**。  
-  - [点击查看完整扫描报告（VirusTotal）](https://t.ly/vt-middle-switch)
+  - [点击查看完整扫描报告（VirusTotal）](https://www.virustotal.com/gui/file/86920d99c56fcb845a87f6d28652c15df6012ce8b7aebf33ab70d31cdfc7b82c/detection))
 - **文件校验信息**：
     SHA256: 86920D99C56FCB845A87F6D28652C15DF6012CE8B7AEBF33AB70D31CDFC7B82C
 - **源码验证**：完整源码已公开，可自行编译并对比哈希值。  
