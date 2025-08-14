@@ -18,7 +18,7 @@ Write-Host ">>> 创建本地备份: $backupDir" -ForegroundColor Cyan
 New-Item -ItemType Directory -Path $backupDir | Out-Null
 
 Write-Host ">>> 开始复制源码与资源文件..." -ForegroundColor Cyan
-Get-ChildItem -Path $projectPath -Recurse -Force -ErrorAction SilentlyContinue |
+Get-ChildItem -LiteralPath $projectPath -Recurse -Force -ErrorAction SilentlyContinue |
     Where-Object {
         -not $_.PSIsContainer -and
         $allowedExt -contains $_.Extension.ToLower() -and
@@ -29,7 +29,10 @@ Get-ChildItem -Path $projectPath -Recurse -Force -ErrorAction SilentlyContinue |
         $_.FullName -notmatch '\\backup[^\\]*($|\\)' -and
 
         # 排除以 backup 开头的 .ps1 文件
-        -not ($_.Extension -eq ".ps1" -and $_.Name.ToLower().StartsWith("backup"))
+        -not ($_.Extension -eq ".ps1" -and $_.Name.ToLower().StartsWith("backup")) -and
+
+        # 过滤长路径
+        $_.FullName.Length -lt 260
     } |
     ForEach-Object {
         Write-Host "复制: $($_.FullName)" -ForegroundColor Gray
@@ -54,34 +57,37 @@ Get-ChildItem -Path $projectPath -Recurse -Force -ErrorAction SilentlyContinue |
 $gitignorePath = Join-Path $projectPath ".gitignore"
 if (-not (Test-Path $gitignorePath)) {
 @"
-# VS 缓存
 .vs/
-# 构建输出
 x64/
 Debug/
 Release/
-# 备份目录
 backup*/
-# 临时文件
 *.tmp
 *.log
 "@ | Out-File -Encoding UTF8 $gitignorePath
 }
 
-# === Git 操作 ===
-# 先暂存已跟踪文件的修改/删除，避免 pull 阻塞
-git add -u
+# === Git 操作（防止 pull 卡住） ===
+# 1. stash 当前所有变更（含未跟踪文件）
+git stash push --include-untracked -m "Auto-stash before backup_and_push"
 
+# 2. 拉取最新
 git pull --rebase origin main
 
+# 3. 恢复之前的变更
+git stash pop
+
+# 4. 提交
 $commitMessage = Read-Host ">>> 请输入提交说明（默认：Auto backup $timestamp）"
 if ([string]::IsNullOrWhiteSpace($commitMessage)) {
     $commitMessage = "Auto backup $timestamp"
 }
 
-# 添加白名单类型的新文件（先检测存在才添加）
+# 添加白名单类型的新文件（存在才 add，避免 fatal）
 foreach ($ext in $allowedExt) {
-    $files = Get-ChildItem -Path $projectPath -Recurse -Include "*$ext" -File -ErrorAction SilentlyContinue
+    $files = Get-ChildItem -LiteralPath $projectPath -Recurse -Force `
+             -ErrorAction SilentlyContinue -Include "*$ext" -File |
+             Where-Object { $_.FullName.Length -lt 260 }
     if ($files.Count -gt 0) {
         git add "*$ext"
     }
