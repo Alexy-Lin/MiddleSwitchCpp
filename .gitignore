@@ -1,83 +1,22 @@
-# ============================
-# Visual Studio build artifacts
-# ============================
-[Bb]in/
-[Oo]bj/
-Debug*/
-Release*/
-x64/
-x86/
-*.obj
-*.pdb
-*.idb
-*.ilk
-*.tmp
-*.log
-*.tlog
-*.pch
-*.ipch
-*.lastbuildstate
-*.suo
-*.user
-*.userosscache
-*.sdf
-*.cachefile
-*.db
-*.opendb
-*.VC.db
-*.VC.VC.opendb
+# 默认忽略所有文件
+*
 
-# ============================
-# Visual Studio generated files
-# ============================
-*.exe
-*.dll
-*.lib
-*.exp
-*.appx
-*.appxrecipe
-*.appxbundle
-*.msix
-*.msixbundle
-*.cer
-*.vspscc
+# === 需要跟踪的文件类型（源码 / 资源 / 脚本） ===
+!*.cpp
+!*.h
+!*.rc
+!*.ico
+!*.png
+!*.jpg
+!*.md
+!*.txt
+!*.bat
 
-# ============================
-# Windows temporary / system files
-# ============================
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
 
-# ============================
-# Backup / temporary files
-# ============================
-*~
-*.bak
-*.tmp
-*.swp
+# === 保留的目录（如果里面有符合类型的文件才会跟踪） ===
+!src/
+!include/
+!resources/
 
-# 本地备份目录（Sheng 专用）
-backup v1*/
-backup_*/
-backup.ps1
-# ============================
-# Keep source & resource files
-# ============================
-# 手动保留以下文件类型
-# *.cpp, *.h, *.rc, *.ico, *.manifest, *.sln, *.vcxproj, *.vcxproj.filters
-# VS 缓存
-.vs/
-# 构建输出
-Debug/
-Release/
-# 备份目录
-backup*/
-# 临时文件
-# 系统文件
-# VS 缓存
-# 构建输出
-# 备份目录
-# 临时文件
-# 系统文件
+# 保留 Git 自身的忽略规则文件
+!.gitignore
