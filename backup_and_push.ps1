@@ -102,12 +102,16 @@ if ([string]::IsNullOrWhiteSpace($commitMessage)) {
     $commitMessage = "Auto backup $timestamp"
 }
 
+# 确保 .gitignore 和脚本本身被提交（如果变更）
+git add .gitignore
+git add backup_and_push.ps1
+
 # 白名单提交新文件（存在才 add）
 foreach ($ext in $allowedExt) {
     $files = Get-ChildItem -LiteralPath $projectPath -Recurse -Force `
              -ErrorAction SilentlyContinue -Include "*$ext" -File |
              Where-Object { $_.FullName.Length -lt 260 }
-    if ($files.Count -gt 0) {
+    if ($files) {
         git add "*$ext"
     }
 }

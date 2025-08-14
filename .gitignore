@@ -67,3 +67,17 @@ backup.ps1
 # ============================
 # 手动保留以下文件类型
 # *.cpp, *.h, *.rc, *.ico, *.manifest, *.sln, *.vcxproj, *.vcxproj.filters
+# VS 缓存
+.vs/
+# 构建输出
+Debug/
+Release/
+# 备份目录
+backup*/
+# 临时文件
+# 系统文件
+# VS 缓存
+# 构建输出
+# 备份目录
+# 临时文件
+# 系统文件
