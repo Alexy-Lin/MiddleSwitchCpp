@@ -1,17 +1,17 @@
-# ====== 配置区 ======
+# ===== 配置区 =====
 $projectPath = "D:\Ccode\MiddleSwitchCpp"
 $allowedExt  = @(".cpp", ".h", ".rc", ".ico", ".png", ".jpg", ".md", ".txt", ".bat", ".ps1")
 $maxSizeMB   = 50
-# ====== 配置结束 ======
+# ===== 配置结束 =====
 
-# === 安全锁 ===
+# === 防呆锁 ===
 if ((Get-Location).ProviderPath -ne $projectPath) {
     Write-Host "错误：当前目录不是 $projectPath" -ForegroundColor Red
     Write-Host "请先运行：cd `"$projectPath`"" -ForegroundColor Yellow
     exit
 }
 
-# 创建备份目录
+# === 创建备份目录 ===
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $backupDir = "backup_$timestamp"
 Write-Host ">>> 创建本地备份: $backupDir" -ForegroundColor Cyan
@@ -50,11 +50,10 @@ Get-ChildItem -Path $projectPath -Recurse -Force -ErrorAction SilentlyContinue |
         }
     }
 
-# ===== Git 提交白名单方式 =====
-# 确保 .gitignore 忽略无关目录
+# === 确保 .gitignore 存在 ===
 $gitignorePath = Join-Path $projectPath ".gitignore"
 if (-not (Test-Path $gitignorePath)) {
-    @"
+@"
 # VS 缓存
 .vs/
 # 构建输出
@@ -69,6 +68,10 @@ backup*/
 "@ | Out-File -Encoding UTF8 $gitignorePath
 }
 
+# === Git 操作 ===
+# 先暂存已跟踪文件的修改/删除，避免 pull 阻塞
+git add -u
+
 git pull --rebase origin main
 
 $commitMessage = Read-Host ">>> 请输入提交说明（默认：Auto backup $timestamp）"
@@ -76,11 +79,12 @@ if ([string]::IsNullOrWhiteSpace($commitMessage)) {
     $commitMessage = "Auto backup $timestamp"
 }
 
-# 先暂存已跟踪文件的修改与删除
-git add -u
-# 再添加白名单类型的新文件
+# 添加白名单类型的新文件（先检测存在才添加）
 foreach ($ext in $allowedExt) {
-    git add "*$ext"
+    $files = Get-ChildItem -Path $projectPath -Recurse -Include "*$ext" -File -ErrorAction SilentlyContinue
+    if ($files.Count -gt 0) {
+        git add "*$ext"
+    }
 }
 
 git commit -m "$commitMessage"
