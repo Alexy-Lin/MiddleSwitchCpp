@@ -11,6 +11,50 @@ if ((Get-Location).ProviderPath -ne $projectPath) {
     exit
 }
 
+# === 自动维护 .gitignore ===
+$gitignorePath = Join-Path $projectPath ".gitignore"
+$ignoreRules = @"
+# VS 缓存
+.vs/
+
+# 构建输出
+x64/
+Debug/
+Release/
+
+# 备份目录
+backup*/
+
+# 临时文件
+*.tmp
+*.log
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+"@
+
+if (-not (Test-Path $gitignorePath)) {
+    $ignoreRules | Out-File -Encoding UTF8 $gitignorePath
+    Write-Host "已创建新的 .gitignore" -ForegroundColor Green
+}
+else {
+    $current = Get-Content $gitignorePath -Raw
+    $updated = $false
+    foreach ($line in $ignoreRules -split "`n") {
+        if ($line.Trim() -ne "" -and $current -notmatch [Regex]::Escape($line.Trim())) {
+            Add-Content -Encoding UTF8 $gitignorePath $line
+            $updated = $true
+        }
+    }
+    if ($updated) {
+        Write-Host ".gitignore 已更新，添加缺失规则" -ForegroundColor Yellow
+    }
+    else {
+        Write-Host ".gitignore 已符合预期规则" -ForegroundColor Cyan
+    }
+}
+
 # === 创建备份目录 ===
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $backupDir = "backup_$timestamp"
@@ -23,15 +67,9 @@ Get-ChildItem -LiteralPath $projectPath -Recurse -Force -ErrorAction SilentlyCon
         -not $_.PSIsContainer -and
         $allowedExt -contains $_.Extension.ToLower() -and
         $_.Length -lt ($maxSizeMB * 1MB) -and
-
-        # 排除目录
         $_.FullName -notmatch '\\(\.git|\.vs|obj|bin)($|\\)' -and
         $_.FullName -notmatch '\\backup[^\\]*($|\\)' -and
-
-        # 排除以 backup 开头的 .ps1 文件
         -not ($_.Extension -eq ".ps1" -and $_.Name.ToLower().StartsWith("backup")) -and
-
-        # 过滤长路径
         $_.FullName.Length -lt 260
     } |
     ForEach-Object {
@@ -39,7 +77,6 @@ Get-ChildItem -LiteralPath $projectPath -Recurse -Force -ErrorAction SilentlyCon
         try {
             $stream = [System.IO.File]::Open($_.FullName, 'Open', 'Read', 'ReadWrite')
             $stream.Close()
-
             $relative = $_.FullName.Substring($projectPath.Length).TrimStart('\')
             $target = Join-Path $backupDir $relative
             $targetDir = Split-Path $target
@@ -53,37 +90,19 @@ Get-ChildItem -LiteralPath $projectPath -Recurse -Force -ErrorAction SilentlyCon
         }
     }
 
-# === 确保 .gitignore 存在 ===
-$gitignorePath = Join-Path $projectPath ".gitignore"
-if (-not (Test-Path $gitignorePath)) {
-@"
-.vs/
-x64/
-Debug/
-Release/
-backup*/
-*.tmp
-*.log
-"@ | Out-File -Encoding UTF8 $gitignorePath
-}
-
-# === Git 操作（防止 pull 卡住） ===
-# 1. stash 当前所有变更（含未跟踪文件）
-git stash push --include-untracked -m "Auto-stash before backup_and_push"
-
-# 2. 拉取最新
+# === Git 同步（安全处理） ===
+git add -u   # 暂存已跟踪的修改/删除
+git stash push -m "Auto-stash before backup_and_push"  # 仅 stash 已跟踪变更
 git pull --rebase origin main
-
-# 3. 恢复之前的变更
 git stash pop
 
-# 4. 提交
+# 提交说明
 $commitMessage = Read-Host ">>> 请输入提交说明（默认：Auto backup $timestamp）"
 if ([string]::IsNullOrWhiteSpace($commitMessage)) {
     $commitMessage = "Auto backup $timestamp"
 }
 
-# 添加白名单类型的新文件（存在才 add，避免 fatal）
+# 白名单提交新文件（存在才 add）
 foreach ($ext in $allowedExt) {
     $files = Get-ChildItem -LiteralPath $projectPath -Recurse -Force `
              -ErrorAction SilentlyContinue -Include "*$ext" -File |
