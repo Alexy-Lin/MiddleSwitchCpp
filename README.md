@@ -1,4 +1,5 @@
 # MiddleSwitch
+[![立即下载](https://img.shields.io/badge/⬇️%20立即下载-Releases-blue?style=for-the-badge)](https://github.com/Alexy-Lin/MiddleSwitchCpp/releases)
 中键点击托盘图标，瞬间切换到左边的虚拟桌面。  
 单文件、免安装，专为快速“切换场景”而生。
 ---
